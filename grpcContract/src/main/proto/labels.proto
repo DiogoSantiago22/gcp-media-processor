@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "pt.isel.cn2026.grpc"; // Um package organizado
+option java_outer_classname = "LabelsProto";
+
+//Operações Funcionais (SF)
+service FuncionalidadesGerais {
+
+  //Submeter uma imagem em stream de blocos e receber um ID da mesma
+  rpc SubmeterImagem (stream BlocoImagem) returns (RespostaSubmissao);
+
+  //Obter características e traduções através do ID retornado anteriormente
+  rpc ObterDetalhesImagem (PedidoDetalhes) returns (RespostaDetalhes);
+
+  //Obter nomes de ficheiros entre duas datas que contenham uma característica devolvida pela aplicação de deteção (Labels App)
+  rpc ProcurarPorCaracteristica (PedidoPesquisa) returns (RespostaPesquisa);
+}
+
+//Operações para Gestão de Elasticidade (SG)
+service GestaoElasticidade {
+
+  //Aumentar ou diminuir as instâncias de VM dos servidores gRPC
+  rpc EscalarServidoresGrpc (PedidoEscala) returns (RespostaEscala);
+
+  //Aumentar ou diminuir as instâncias de VM da aplicação Labels App
+  rpc EscalarLabelsApp (PedidoEscala) returns (RespostaEscala);
+}
+
+
+// Definição das Mensagens
+
+//Mensagens para Submissão
+message BlocoImagem {
+  string nome_ficheiro = 1; // nome do ficheiro (ex: foto.jpg)
+  bytes conteudo = 2;       // Tipo 'bytes' é usado para enviar os blocos em stream do ficheiro
+}
+
+message RespostaSubmissao {
+  string id_pedido = 1; // O ID único gerado no final do envio
+}
+
+
+//Mensagens para Detalhes
+message PedidoDetalhes {
+  string id_pedido = 1;
+}
+
+// Mensagem para agrupar a informação de cada etiqueta detetada
+message DetalheCaracteristica {
+  string nome_original = 1; // A label em inglês dada pela translation API (ex: "cat")
+  string nome_traduzido = 2; // A tradução para português (ex: "gato")
+  float confianca = 3; // A pontuação de confiança (entre 0 e 1)
+}
+
+message RespostaDetalhes {
+  string data_processamento = 1;
+  // O termo 'repeated' significa que isto é uma lista
+  repeated DetalheCaracteristica caracteristicas = 2;
+}
+
+
+//Mensagens para Pesquisa
+message PedidoPesquisa {
+  string caracteristica = 1; // ex: "Cat"
+  string data_inicio = 2; // ex: "2026-05-01"
+  string data_fim = 3; // ex: "2026-05-30"
+}
+
+message RespostaPesquisa {
+  repeated string nomes_ficheiros = 1; // Devolve uma lista com os nomes dos ficheiros das imagens
+}
+
+
+//Mensagens para Escalonamento
+message PedidoEscala {
+  int32 numero_instancias = 1; // O número exato de máquinas que queremos passar a ter
+}
+
+message RespostaEscala {
+  bool sucesso = 1;      // Verdadeiro se conseguiu alterar o numero de instâncias
+  string mensagem = 2;   // Mensagem de feedback
+}
